@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .form-group input[type="file"] {
+            margin-top: 5px;
+        }
+        .form-group button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .form-group button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .result h3 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Upload Image</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="imageInput">Select Image:</label>
+                <input type="file" id="imageInput" accept="image/*" required>
+            </div>
+            <div class="form-group">
+                <button type="submit">Upload Image</button>
+            </div>
+        </form>
+
+        <div class="result" id="result">
+            <!-- Result information will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Get the selected image file
+            let fileInput = document.getElementById('imageInput');
+            let file = fileInput.files[0];
+
+            if (file) {
+                // Read the file as a Data URL
+                let reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function() {
+                    // Convert the image to Base64 format
+                    let base64Image = reader.result.split(',')[1]; // Extract only the Base64 data
+
+                    // Construct JSON data to send to backend
+                    let requestData = {
+                        images: [base64Image]
+                    };
+
+                    // Send the JSON data to backend API
+                    fetch('http://localhost:8080/api/v1/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Handle response data
+                        console.log('Response from backend:', data);
+                        displayResult(data);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Handle error
+                    });
+                };
+            } else {
+                alert('Please select an image file.');
+            }
+        });
+
+        function displayResult(data) {
+            let resultDiv = document.getElementById('result');
+            let html = `<h3>Analysis Result:</h3>`;
+
+            // Display access token and model version
+            html += `<p><strong>Access Token:</strong> ${data.access_token}</p>`;
+            html += `<p><strong>Model Version:</strong> ${data.model_version}</p>`;
+
+            // Display plant, disease, and crop suggestions
+            let result = data.result;
+
+            if (result.is_plant.binary) {
+                html += `<p><strong>Plant Detected:</strong> Yes</p>`;
+            } else {
+                html += `<p><strong>Plant Detected:</strong> No</p>`;
+            }
+
+            if (result.disease.suggestions.length > 0) {
+                html += `<h4>Disease Suggestions:</h4>`;
+                result.disease.suggestions.forEach(suggestion => {
+                    html += `<p><strong>Disease:</strong> ${suggestion.name}</p>`;
+                    html += `<p><strong>Probability:</strong> ${suggestion.probability}</p>`;
+                    html += `<p><strong>Scientific Name:</strong> ${suggestion.scientific_name}</p>`;
+                });
+            }
+
+            if (result.crop.suggestions.length > 0) {
+                html += `<h4>Crop Suggestions:</h4>`;
+                result.crop.suggestions.forEach(suggestion => {
+                    html += `<p><strong>Crop:</strong> ${suggestion.name}</p>`;
+                    html += `<p><strong>Probability:</strong> ${suggestion.probability}</p>`;
+                    html += `<p><strong>Scientific Name:</strong> ${suggestion.scientific_name}</p>`;
+                });
+            }
+
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
