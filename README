@@ -1,4 +1,5 @@
 # Crop-Disease-Detection-SpringBoot
+#Here online API is used for the detection model
 
 I am learning to develop web applications, and this project was developed for a competition.
 This project is built on Spring Boot, HTML, CSS, JavaScript .All the project files are included here, including frontend and backend.
